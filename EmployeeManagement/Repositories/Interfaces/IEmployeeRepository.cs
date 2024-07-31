@@ -1,12 +1,13 @@
-﻿using EmployeeManagement.Models;
+﻿using EmployeeManagement.DTOs;
+using EmployeeManagement.Models;
 
 namespace EmployeeManagement.Repositories.Interfaces;
 
 public interface IEmployeeRepository
 {
-    Task Create();
+    Task Create(CreateEmployeeRequest request);
 
-    Task Remove();
+    Task Remove(Guid employeeId);
 
     Task Update();
 
