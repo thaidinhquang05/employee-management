@@ -41,12 +41,13 @@ public class EmployeeController : Controller
     [HttpDelete]
     public async Task<ApiResponse> Delete(Guid employeeId)
     {
-        if (employeeId == Guid.Empty) return new ApiResponse
-        {
-            Code = 500,
-            Message = "Employee Id cannot be null!"
-        };
-        
+        if (employeeId == Guid.Empty)
+            return new ApiResponse
+            {
+                Code = 500,
+                Message = "Employee Id cannot be null!"
+            };
+
         try
         {
             await _employeeRepository.Remove(employeeId);
@@ -54,6 +55,98 @@ public class EmployeeController : Controller
             {
                 Code = 200,
                 Message = "Deleted Successfully!"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponse
+            {
+                Code = 500,
+                Message = ex.Message
+            };
+        }
+    }
+
+    [HttpPut]
+    public async Task<ApiResponse> Update([FromQuery] Guid employeeId, [FromBody] UpdateEmployeeRequest request)
+    {
+        if (employeeId == Guid.Empty)
+            return new ApiResponse
+            {
+                Code = 500,
+                Message = "Employee Id cannot be null!"
+            };
+        try
+        {
+            await _employeeRepository.Update(employeeId, request);
+            return new ApiResponse
+            {
+                Code = 200,
+                Message = "Updated Successfully!"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponse
+            {
+                Code = 500,
+                Message = ex.Message
+            };
+        }
+    }
+
+    [HttpGet]
+    public async Task<ApiResponse> GetEmployeeDetailById(Guid employeeId)
+    {
+        if (employeeId == Guid.Empty)
+            return new ApiResponse
+            {
+                Code = 500,
+                Message = "Employee Id cannot be null!"
+            };
+        try
+        {
+            var response = await _employeeRepository.GetEmployeeDetailByEmployeeId(employeeId);
+            if (response == null)
+                return new ApiResponse
+                {
+                    Code = 404,
+                    Message = "Object not found!"
+                };
+            return new ApiResponse
+            {
+                Code = 200,
+                Message = "Get Data Successfully!",
+                Data = response
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponse
+            {
+                Code = 500,
+                Message = ex.Message
+            };
+        }
+    }
+
+    [HttpPost]
+    public async Task<ApiResponse> SearchEmployee(SearchEmployeesRequest request)
+    {
+        try
+        {
+            var response = await _employeeRepository.SearchEmployee(request);
+            if (response.Count == 0)
+                return new ApiResponse
+                {
+                    Code = 404,
+                    Message = "Object not found!"
+                };
+            return new ApiResponse
+            {
+                Code = 200,
+                Message = "Get Data Successfully!",
+                Data = response
             };
         }
         catch (Exception ex)

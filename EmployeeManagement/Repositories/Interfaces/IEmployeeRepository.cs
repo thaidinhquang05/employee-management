@@ -9,11 +9,9 @@ public interface IEmployeeRepository
 
     Task Remove(Guid employeeId);
 
-    Task Update();
+    Task Update(Guid employeeId, UpdateEmployeeRequest request);
 
-    Task<Employee> GetEmployeeDetailByEmployeeId(Guid employeeId);
+    Task<Employee?> GetEmployeeDetailByEmployeeId(Guid employeeId);
 
-    Task<List<Employee>> GetListEmployees();
-
-    Task<List<Employee>> SearchEmployee();
+    Task<List<Employee>> SearchEmployee(SearchEmployeesRequest request);
 }

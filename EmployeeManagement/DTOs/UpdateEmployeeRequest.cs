@@ -3,7 +3,7 @@ using EmployeeManagement.Constants;
 
 namespace EmployeeManagement.DTOs;
 
-public class CreateEmployeeRequest
+public class UpdateEmployeeRequest
 {
     [Required(ErrorMessage = "Full Name is required!")]
     public required string FullName { get; set; }

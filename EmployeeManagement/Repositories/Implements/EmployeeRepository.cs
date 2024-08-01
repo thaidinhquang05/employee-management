@@ -60,32 +60,33 @@ public class EmployeeRepository : IEmployeeRepository
         {
             id = latestEmployee.Id;
         }
+        
+        if (!string.IsNullOrEmpty(request.Email) && !IsValidEmail(request.Email))
+        {
+            throw new Exception("Email is Invalid!");
+        }
+        if (!string.IsNullOrEmpty(request.MobilePhone) && !IsValidPhoneNumber(request.MobilePhone))
+        {
+            throw new Exception("MobilePhone is invalid!");
+        }
+        if (!string.IsNullOrEmpty(request.LandlinePhone) && !IsValidPhoneNumber(request.LandlinePhone))
+        {
+            throw new Exception("LandlinePhone is invalid!");
+        }
 
         var parameters = new DynamicParameters();
         parameters.Add("employeeId", Guid.NewGuid(), DbType.Guid);
         parameters.Add("fullName", request.FullName, DbType.String);
         parameters.Add("gender", request.Gender, DbType.Int32);
         parameters.Add("dob", request.Dob, DbType.DateTime);
-        if (!string.IsNullOrEmpty(request.Email) && IsValidEmail(request.Email))
-        {
-            parameters.Add("email", request.Email, DbType.String);
-        }
-
+        parameters.Add("email", request.Email, DbType.String);
         parameters.Add("address", request.Address, DbType.String);
-        parameters.Add("searchText", $"{id} - {request.FullName}", DbType.String);
+        parameters.Add("searchText", $"{id + 1} - {request.FullName}", DbType.String);
         parameters.Add("identifierId", request.IdentifierId, DbType.String);
         parameters.Add("expireDate", request.ExpireDate, DbType.DateTime);
         parameters.Add("issuedBy", request.IssuedBy, DbType.Int32);
-        if (!string.IsNullOrEmpty(request.MobilePhone) && IsValidPhoneNumber(request.MobilePhone))
-        {
-            parameters.Add("mobilePhone", request.MobilePhone, DbType.String);
-        }
-
-        if (!string.IsNullOrEmpty(request.LandlinePhone) && IsValidPhoneNumber(request.LandlinePhone))
-        {
-            parameters.Add("landlinePhone", request.LandlinePhone, DbType.String);
-        }
-
+        parameters.Add("mobilePhone", request.MobilePhone, DbType.String);
+        parameters.Add("landlinePhone", request.LandlinePhone, DbType.String);
         parameters.Add("bankAccount", request.BankAccount, DbType.String);
         parameters.Add("bankName", request.BankName, DbType.String);
         parameters.Add("branchBank", request.BranchBank, DbType.String);
@@ -102,32 +103,91 @@ public class EmployeeRepository : IEmployeeRepository
         await connection.ExecuteAsync(query, new { employeeId });
     }
 
-    public Task Update()
+    public async Task Update(Guid employeeId, UpdateEmployeeRequest request)
     {
-        throw new NotImplementedException();
+        var query = @"UPDATE employee SET 
+                        FullName = @fullName,
+                        Gender = @gender,
+                        Dob = @dob,
+                        Email = @email,
+                        Address = @address,
+                        IdentifierId = @identifierId,
+                        ExpireDate = @expireDate,
+                        IssuedBy = @issuedBy,
+                        MobilePhone = @mobilePhone,
+                        LandlinePhone = @landlinePhone,
+                        BankAccount = @bankAccount,
+                        BankName = @bankName,
+                        BranchBank = @branchBank,
+                        Position = @position,
+                        Department = @department
+                    WHERE EmployeeId = @employeeId";
+        
+        if (!string.IsNullOrEmpty(request.Email) && !IsValidEmail(request.Email))
+        {
+            throw new Exception("Email is Invalid!");
+        }
+        if (!string.IsNullOrEmpty(request.MobilePhone) && !IsValidPhoneNumber(request.MobilePhone))
+        {
+            throw new Exception("MobilePhone is invalid!");
+        }
+        if (!string.IsNullOrEmpty(request.LandlinePhone) && !IsValidPhoneNumber(request.LandlinePhone))
+        {
+            throw new Exception("LandlinePhone is invalid!");
+        }
+        
+        var parameters = new DynamicParameters();
+        parameters.Add("employeeId", employeeId, DbType.Guid);
+        parameters.Add("fullName", request.FullName, DbType.String);
+        parameters.Add("gender", request.Gender, DbType.Int32);
+        parameters.Add("dob", request.Dob, DbType.DateTime);
+        parameters.Add("email", request.Email, DbType.String);
+        parameters.Add("address", request.Address, DbType.String);
+        parameters.Add("identifierId", request.IdentifierId, DbType.String);
+        parameters.Add("expireDate", request.ExpireDate, DbType.DateTime);
+        parameters.Add("issuedBy", request.IssuedBy, DbType.Int32);
+        parameters.Add("mobilePhone", request.MobilePhone, DbType.String);
+        parameters.Add("landlinePhone", request.LandlinePhone, DbType.String);
+        parameters.Add("bankAccount", request.BankAccount, DbType.String);
+        parameters.Add("bankName", request.BankName, DbType.String);
+        parameters.Add("branchBank", request.BranchBank, DbType.String);
+        parameters.Add("position", request.Position, DbType.Int32);
+        parameters.Add("department", request.Department, DbType.Int32);
+
+        using var connection = _context.CreateConnection();
+        await connection.ExecuteAsync(query, parameters);
     }
 
-    public Task<Employee> GetEmployeeDetailByEmployeeId(Guid employeeId)
+    public async Task<Employee?> GetEmployeeDetailByEmployeeId(Guid employeeId)
     {
-        throw new NotImplementedException();
+        var query = "SELECT * FROM employee WHERE EmployeeId = @employeeId";
+        using var connection = _context.CreateConnection();
+        var employee = await connection.QuerySingleOrDefaultAsync<Employee>(query, new {employeeId});
+        return employee;
     }
 
-    public Task<List<Employee>> GetListEmployees()
+    public async Task<List<Employee>> SearchEmployee(SearchEmployeesRequest request)
     {
-        throw new NotImplementedException();
-    }
-
-    public Task<List<Employee>> SearchEmployee()
-    {
-        throw new NotImplementedException();
+        var query = "SELECT * FROM employee WHERE true";
+        if (!string.IsNullOrEmpty(request.SearchText))
+        {
+            query += " AND SearchText LIKE @searchText";
+        }
+        var parameters = new DynamicParameters();
+        parameters.Add("searchText", $"%{request.SearchText}%", DbType.String);
+        
+        using var connection = _context.CreateConnection();
+        var employees = await connection.QueryAsync<Employee>(query, parameters);
+        employees = employees.Skip(request.Offset).Take(request.PageSize);
+        return employees.ToList();
     }
 
     private async Task<Employee?> GetLatestEmployee()
     {
         var query = "SELECT * FROM employee ORDER BY Id DESC";
         using var connection = _context.CreateConnection();
-        IEnumerable<Employee?> employees = await connection.QueryAsync<Employee>(query);
-        return employees.FirstOrDefault();
+        var employee = await connection.QuerySingleOrDefaultAsync<Employee>(query);
+        return employee;
     }
 
     private bool IsValidEmail(string email)
